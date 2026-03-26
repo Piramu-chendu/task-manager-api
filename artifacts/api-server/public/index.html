@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --danger: #ef4444;
+      --danger-dark: #dc2626;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --blue: #3b82f6;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --radius: 8px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .nav { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 60px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+    .nav-brand { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .nav-user { font-size: 0.875rem; color: var(--text-muted); }
+    .nav-badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .nav-badge.admin { background: var(--warning); }
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
+    .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .auth-card { background: var(--card); border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .auth-title { font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 0.25rem; }
+    .auth-subtitle { color: var(--text-muted); text-align: center; font-size: 0.875rem; margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text); }
+    input, select, textarea { width: 100%; padding: 0.65rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; background: #fff; color: var(--text); transition: border-color 0.2s; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    textarea { resize: vertical; min-height: 80px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.2rem; border: none; border-radius: var(--radius); font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover:not(:disabled) { background: var(--danger-dark); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: #e2e8f0; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+    .btn-full { width: 100%; }
+    .alert { padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 1rem; }
+    .alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .auth-switch { margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: var(--text-muted); }
+    .auth-switch a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: gap; }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: var(--card); padding: 0.5rem; border-radius: var(--radius); border: 1px solid var(--border); width: fit-content; }
+    .tab { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); background: transparent; border: none; transition: all 0.15s; }
+    .tab.active { background: var(--primary); color: white; }
+    .tab:hover:not(.active) { background: var(--bg); }
+    .filter-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .filter-btn { padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); transition: all 0.15s; }
+    .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .tasks-grid { display: grid; gap: 1rem; }
+    .task-card { background: var(--card); border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--border); transition: box-shadow 0.2s; }
+    .task-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .task-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
+    .task-title { font-weight: 600; font-size: 1rem; }
+    .task-desc { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem; }
+    .task-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .task-actions { display: flex; gap: 0.5rem; }
+    .task-meta { font-size: 0.75rem; color: var(--text-muted); }
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-in_progress { background: #dbeafe; color: #1e40af; }
+    .badge-done { background: #dcfce7; color: #166534; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    .modal { background: var(--card); border-radius: 12px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .info-card { background: var(--card); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .info-row { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .info-item { }
+    .info-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .info-value { font-size: 1rem; font-weight: 500; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: var(--bg); text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1e293b; color: white; padding: 0.85rem 1.25rem; border-radius: var(--radius); font-size: 0.875rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; animation: slideIn 0.3s ease; max-width: 320px; }
+    .toast.success { background: #15803d; }
+    .toast.error { background: #b91c1c; }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      .nav { padding: 0 1rem; }
+      .container { padding: 1rem; }
+      .auth-card { padding: 1.5rem; }
+      .info-row { gap: 1rem; }
+      .modal-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const API = "/api/v1";
+
+function getToken() { return localStorage.getItem("token"); }
+function getUser() { try { return JSON.parse(localStorage.getItem("user") || "null"); } catch { return null; } }
+function saveAuth(token, user) { localStorage.setItem("token", token); localStorage.setItem("user", JSON.stringify(user)); }
+function clearAuth() { localStorage.removeItem("token"); localStorage.removeItem("user"); }
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) };
+  const res = await fetch(API + path, { ...options, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Request failed");
+  return data;
+}
+
+// Toast component
+function Toast({ message, type, onClose }) {
+  React.useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+  return <div className={`toast ${type}`}>{message}</div>;
+}
+
+function useToast() {
+  const [toast, setToast] = React.useState(null);
+  const show = (message, type = "success") => { setToast({ message, type, id: Date.now() }); };
+  const ToastEl = toast ? <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} /> : null;
+  return { show, ToastEl };
+}
+
+// Modal component
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-title">{title}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Login Page
+function LoginPage({ onNavigate, onLogin }) {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      saveAuth(res.data.token, res.data.user);
+      onLogin(res.data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-title">Welcome back</div>
+        <div className="auth-subtitle">Sign in to your account</div>
+        {error && <div className="alert alert-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" required />
+          </div>
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+            {loading ? <><span className="spinner" /> Signing in...</> : "Sign In"}
+          </button>
+        </form>
+        <div className="auth-switch">
+          Don't have an account? <a onClick={() => onNavigate("register")}>Register</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Register Page
+function RegisterPage({ onNavigate }) {
+  const [form, setForm] = React.useState({ username: "", email: "", password: "" });
+  const [error, setError] = React.useState("");
+  const [success, setSuccess] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(""); setSuccess("");
+    setLoading(true);
+    try {
+      await apiFetch("/auth/register", { method: "POST", body: JSON.stringify(form) });
+      setSuccess("Account created! Redirecting to login...");
+      setTimeout(() => onNavigate("login"), 1500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-title">Create account</div>
+        <div className="auth-subtitle">Get started for free</div>
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Username</label>
+            <input value={form.username} onChange={set("username")} placeholder="johndoe" required />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" required />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" value={form.password} onChange={set("password")} placeholder="min 6 characters" minLength={6} required />
+          </div>
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+            {loading ? <><span className="spinner" /> Creating account...</> : "Create Account"}
+          </button>
+        </form>
+        <div className="auth-switch">
+          Already have an account? <a onClick={() => onNavigate("login")}>Sign in</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Task Form Modal
+function TaskModal({ task, onClose, onSave }) {
+  const [form, setForm] = React.useState({ title: task?.title || "", description: task?.description || "", status: task?.status || "pending" });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    try {
+      if (task) {
+        const res = await apiFetch(`/tasks/${task.id}`, { method: "PUT", body: JSON.stringify(form) });
+        onSave(res.data, false);
+      } else {
+        const res = await apiFetch("/tasks", { method: "POST", body: JSON.stringify(form) });
+        onSave(res.data, true);
+      }
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal title={task ? "Edit Task" : "New Task"} onClose={onClose}>
+      {error && <div className="alert alert-error">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Title *</label>
+          <input value={form.title} onChange={set("title")} placeholder="Enter task title" required />
+        </div>
+        <div className="form-group">
+          <label>Description</label>
+          <textarea value={form.description} onChange={set("description")} placeholder="Optional description..." />
+        </div>
+        <div className="form-group">
+          <label>Status</label>
+          <select value={form.status} onChange={set("status")}>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? <><span className="spinner" /> Saving...</> : (task ? "Update Task" : "Create Task")}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function StatusBadge({ status }) {
+  const labels = { pending: "Pending", in_progress: "In Progress", done: "Done" };
+  return <span className={`badge badge-${status}`}>{labels[status] || status}</span>;
+}
+
+// Task Manager
+function TaskManager({ toast }) {
+  const [tasks, setTasks] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState("all");
+  const [modal, setModal] = React.useState(null);
+
+  async function fetchTasks() {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/tasks");
+      setTasks(res.data);
+    } catch (err) {
+      toast.show(err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  React.useEffect(() => { fetchTasks(); }, []);
+
+  async function handleDelete(id) {
+    if (!confirm("Delete this task?")) return;
+    try {
+      await apiFetch(`/tasks/${id}`, { method: "DELETE" });
+      setTasks(t => t.filter(x => x.id !== id));
+      toast.show("Task deleted");
+    } catch (err) {
+      toast.show(err.message, "error");
+    }
+  }
+
+  function handleSave(task, isNew) {
+    if (isNew) setTasks(t => [task, ...t]);
+    else setTasks(t => t.map(x => x.id === task.id ? task : x));
+    toast.show(isNew ? "Task created!" : "Task updated!");
+  }
+
+  const filtered = filter === "all" ? tasks : tasks.filter(t => t.status === filter);
+
+  return (
+    <div>
+      <div className="page-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+        <h2 className="page-title">My Tasks</h2>
+        <button className="btn btn-primary" onClick={() => setModal({ type: "create" })}>+ New Task</button>
+      </div>
+      <div className="filter-row">
+        {["all", "pending", "in_progress", "done"].map(f => (
+          <button key={f} className={`filter-btn ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
+            {f === "all" ? "All" : f === "in_progress" ? "In Progress" : f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === "all" && <span style={{ marginLeft: "0.4rem", fontWeight: 700 }}>{tasks.length}</span>}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <div className="empty-state"><div className="empty-icon">⏳</div><div className="empty-title">Loading tasks...</div></div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📋</div>
+          <div className="empty-title">{filter === "all" ? "No tasks yet" : `No ${filter.replace("_", " ")} tasks`}</div>
+          <p style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>Create your first task to get started.</p>
+          {filter === "all" && <button className="btn btn-primary" onClick={() => setModal({ type: "create" })}>Create Task</button>}
+        </div>
+      ) : (
+        <div className="tasks-grid">
+          {filtered.map(task => (
+            <div key={task.id} className="task-card">
+              <div className="task-header">
+                <div className="task-title">{task.title}</div>
+                <StatusBadge status={task.status} />
+              </div>
+              {task.description && <div className="task-desc">{task.description}</div>}
+              <div className="task-footer">
+                <div className="task-meta">{new Date(task.created_at).toLocaleDateString()}</div>
+                <div className="task-actions">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setModal({ type: "edit", task })}>Edit</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(task.id)}>Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal?.type === "create" && <TaskModal onClose={() => setModal(null)} onSave={handleSave} />}
+      {modal?.type === "edit" && <TaskModal task={modal.task} onClose={() => setModal(null)} onSave={handleSave} />}
+    </div>
+  );
+}
+
+// Admin Panel
+function AdminPanel({ toast }) {
+  const [users, setUsers] = React.useState([]);
+  const [tasks, setTasks] = React.useState([]);
+  const [view, setView] = React.useState("users");
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetch() {
+      setLoading(true);
+      try {
+        const [ur, tr] = await Promise.all([apiFetch("/admin/users"), apiFetch("/admin/tasks")]);
+        setUsers(ur.data); setTasks(tr.data);
+      } catch (err) {
+        toast.show(err.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetch();
+  }, []);
+
+  async function handleDeleteUser(id) {
+    if (!confirm("Delete this user and all their tasks?")) return;
+    try {
+      await apiFetch(`/admin/users/${id}`, { method: "DELETE" });
+      setUsers(u => u.filter(x => x.id !== id));
+      setTasks(t => t.filter(x => x.user_id !== id));
+      toast.show("User deleted");
+    } catch (err) {
+      toast.show(err.message, "error");
+    }
+  }
+
+  return (
+    <div>
+      <h2 className="page-title" style={{ marginBottom: "1.5rem" }}>Admin Panel</h2>
+      <div className="tabs">
+        <button className={`tab ${view === "users" ? "active" : ""}`} onClick={() => setView("users")}>Users ({users.length})</button>
+        <button className={`tab ${view === "tasks" ? "active" : ""}`} onClick={() => setView("tasks")}>All Tasks ({tasks.length})</button>
+      </div>
+      {loading ? (
+        <div className="empty-state"><div className="empty-icon">⏳</div><div className="empty-title">Loading...</div></div>
+      ) : view === "users" ? (
+        <div className="info-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id}>
+                    <td>#{u.id}</td>
+                    <td style={{ fontWeight: 500 }}>{u.username}</td>
+                    <td>{u.email}</td>
+                    <td><span className={`nav-badge ${u.role === "admin" ? "admin" : ""}`}>{u.role}</span></td>
+                    <td>{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteUser(u.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", color: "var(--text-muted)" }}>No users</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="info-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Title</th><th>Status</th><th>User</th><th>Created</th></tr></thead>
+              <tbody>
+                {tasks.map(t => (
+                  <tr key={t.id}>
+                    <td>#{t.id}</td>
+                    <td style={{ fontWeight: 500 }}>{t.title}</td>
+                    <td><StatusBadge status={t.status} /></td>
+                    <td>{t.username}</td>
+                    <td>{new Date(t.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {tasks.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--text-muted)" }}>No tasks</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Dashboard (after login)
+function Dashboard({ user, onLogout }) {
+  const [page, setPage] = React.useState("tasks");
+  const toast = useToast();
+
+  return (
+    <>
+      <nav className="nav">
+        <div className="nav-brand">📋 Task Manager</div>
+        <div className="nav-right">
+          <span className="nav-user">Hi, {user.username}</span>
+          <span className={`nav-badge ${user.role === "admin" ? "admin" : ""}`}>{user.role}</span>
+          {user.role === "admin" && (
+            <button className="btn btn-secondary btn-sm" onClick={() => setPage(p => p === "admin" ? "tasks" : "admin")}>
+              {page === "admin" ? "My Tasks" : "Admin Panel"}
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={onLogout}>Logout</button>
+        </div>
+      </nav>
+      <div className="container">
+        <div className="info-card">
+          <div className="info-row">
+            <div className="info-item"><div className="info-label">Username</div><div className="info-value">{user.username}</div></div>
+            <div className="info-item"><div className="info-label">Email</div><div className="info-value">{user.email}</div></div>
+            <div className="info-item"><div className="info-label">Role</div><div className="info-value" style={{ textTransform: "capitalize" }}>{user.role}</div></div>
+            <div className="info-item">
+              <div className="info-label">API Docs</div>
+              <div className="info-value"><a href="/api/docs" target="_blank" style={{ color: "var(--primary)" }}>Swagger UI ↗</a></div>
+            </div>
+          </div>
+        </div>
+        {page === "tasks" ? <TaskManager toast={toast} /> : <AdminPanel toast={toast} />}
+      </div>
+      {toast.ToastEl}
+    </>
+  );
+}
+
+// App Root
+function App() {
+  const [user, setUser] = React.useState(() => getUser());
+  const [page, setPage] = React.useState("login");
+
+  function handleLogin(u) { setUser(u); }
+  function handleLogout() { clearAuth(); setUser(null); setPage("login"); }
+
+  if (user) return <Dashboard user={user} onLogout={handleLogout} />;
+
+  if (page === "register") return <RegisterPage onNavigate={setPage} />;
+  return <LoginPage onNavigate={setPage} onLogin={handleLogin} />;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
